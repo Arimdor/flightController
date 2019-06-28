@@ -1,10 +1,10 @@
 import pygame
 import serial
+import socket
 import struct
 import threading
 import time
 import sys
-#import socket
 
 # pygame.init()
 pygame.joystick.init()
@@ -12,10 +12,10 @@ pygame.font.init()
 clock = pygame.time.Clock()
 
 # UDO Setup
-UDP_IP = "192.168.1.5"
+UDP_IP = "192.168.1.184"
 UDP_PORT = 6969
 
-#sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 # Screen setup
 size = 800, 480
@@ -24,16 +24,19 @@ pygame.display.set_caption("Joystic")
 run = True
 
 # Joystick setup
-joysticks = [pygame.joystick.Joystick(x)
-             for x in range(pygame.joystick.get_count())]
+lJoysticks = [pygame.joystick.Joystick(x)
+              for x in range(pygame.joystick.get_count())]
 
-joystick = joysticks[0]
+
+for joy in lJoysticks:
+    print("DEVICE :" + joy.get_name())
+
+joystick = lJoysticks[0]
 joystick.init()
 
-throttle = joysticks[1]
-throttle.init()
-
-print("Joystick :" + joystick.get_name() + "Throttle :" + throttle.get_name())
+if(len(lJoysticks) > 1):
+    throttle = lJoysticks[1]
+    throttle.init()
 
 # Font Setup
 font = pygame.font.SysFont("monospace", 18)
@@ -43,7 +46,7 @@ last_position_y = 0.00000
 last_position_throttle = 0.00000
 
 # Serial COM Setup
-arduino = serial.Serial('com4', baudrate=9600)
+arduino = serial.Serial('/dev/tty.SLAB_USBtoUART', baudrate=9600)
 
 
 def readSerial():
@@ -62,7 +65,7 @@ def readSerial():
 
 
 #thread = threading.Thread(target=readSerial)
-#thread.start()
+# thread.start()
 
 
 def close_read_serial():
@@ -84,17 +87,19 @@ def main_loop():
                 throttle.quit()
                 pygame.quit()
 
-            x = round(joystick.get_axis(0) * -1, 5)
-            y = round(joystick.get_axis(1) * -1, 5)
-            z = round(throttle.get_axis(2) * -1, 5)
+            x = round(joystick.get_axis(0) * -1, 6)
+            y = round(joystick.get_axis(1) * -1, 6)
+            z = round(joystick.get_axis(2) * -1, 6)
 
             if(x != last_position_x or y != last_position_y or last_position_throttle != z):
                 last_position_x = x
                 last_position_y = y
                 last_position_throttle = z
 
-                x_data = ((((1 + last_position_x) / 2 - 0) * (485 - 110)) / (1 - 0)) + 110
-                y_data = ((((1 + last_position_y) / 2 - 0) * (180 - 0)) / (1 - 0)) + 0
+                x_data = ((((1 + last_position_x) / 2 - 0)
+                           * (485 - 110)) / (1 - 0)) + 110
+                y_data = ((((1 + last_position_y) / 2 - 0)
+                           * (180 - 0)) / (1 - 0)) + 0
                 power = 143 + (440 * (1 + last_position_throttle)) + 1
 
                 if power < 150:

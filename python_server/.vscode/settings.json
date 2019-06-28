@@ -1,4 +1,5 @@
 {
     "python.linting.pylintEnabled": false,
-    "python.pythonPath": "C:\\python\\python.exe"
+    "python.pythonPath": "/usr/local/bin/python3",
+    "python.formatting.provider": "autopep8"
 }

@@ -1,6 +1,8 @@
 #include <Arduino.h>
-#include <ESP32Servo.h>
 #include <esp32-hal-ledc.h>
+#include <ESP32Servo.h>
+#include <WiFi.h>
+#include <AsyncUDP.h>
 
 String data = "";
 
@@ -20,6 +22,16 @@ const int SERVOX = 23;
 
 Servo servoY;
 
+const char *ssid = "Casa";
+const char *password = "123456789R";
+IPAddress local_IP(192, 168, 1, 184);
+IPAddress gateway(192, 168, 1, 1);
+IPAddress subnet(255, 255, 0, 0);
+IPAddress primaryDNS(8, 8, 8, 8);
+IPAddress secondaryDNS(8, 8, 4, 4);
+
+AsyncUDP udp;
+
 void setup()
 {
   ledcSetup(CH_MOTOR, 60, 10);
@@ -35,6 +47,47 @@ void setup()
   servoY.setPeriodHertz(60);
   servoY.attach(SERVOY, 500, 2400);
   Serial.begin(9600);
+
+  if (!WiFi.config(local_IP, gateway, subnet, primaryDNS, secondaryDNS))
+  {
+    Serial.println("STA Failed to configure");
+  }
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  if (WiFi.waitForConnectResult() != WL_CONNECTED)
+  {
+    while (true)
+    {
+      Serial.println("WiFi Failed");
+      delay(1000);
+    }
+  }
+  Serial.println("WiFi Connected");
+  if (udp.listen(6969))
+  {
+    Serial.print("UDP Listening on IP: ");
+    Serial.println(WiFi.localIP());
+    udp.onPacket([](AsyncUDPPacket packet) {
+      Serial.print("UDP Packet Type: ");
+      Serial.print(packet.isBroadcast() ? "Broadcast" : packet.isMulticast() ? "Multicast" : "Unicast");
+      Serial.print(", From: ");
+      Serial.print(packet.remoteIP());
+      Serial.print(":");
+      Serial.print(packet.remotePort());
+      Serial.print(", To: ");
+      Serial.print(packet.localIP());
+      Serial.print(":");
+      Serial.print(packet.localPort());
+      Serial.print(", Length: ");
+      Serial.print(packet.length());
+      Serial.print(", Data: ");
+      Serial.write(packet.data(), packet.length());
+      Serial.println();
+      //reply to the client
+      packet.printf("Got %u bytes of data", packet.length());
+    });
+  }
 }
 
 void loop()
