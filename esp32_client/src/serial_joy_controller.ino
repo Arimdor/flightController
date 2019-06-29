@@ -24,6 +24,8 @@ Servo servoY;
 
 const char *ssid = "Casa";
 const char *password = "987654321R";
+unsigned int check_wifi = 30000;
+
 IPAddress local_IP(192, 168, 1, 184);
 IPAddress gateway(192, 168, 1, 1);
 IPAddress subnet(255, 255, 0, 0);
@@ -48,60 +50,22 @@ void setup()
   servoY.attach(SERVOY, 500, 2400);
   Serial.begin(9600);
 
-  if (!WiFi.config(local_IP, gateway, subnet, primaryDNS, secondaryDNS))
-  {
-    Serial.println("STA Failed to configure");
-  }
-
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
-  if (WiFi.waitForConnectResult() != WL_CONNECTED)
-  {
-    while (true)
-    {
-      Serial.println("WiFi Failed");
-      delay(1000);
-    }
-  }
-  Serial.println("WiFi Connected");
-  if (udp.listen(6969))
-  {
-    Serial.print("UDP Listening on IP: ");
-    Serial.println(WiFi.localIP());
-    udp.onPacket([](AsyncUDPPacket packet) {
-      //Serial.write(packet.data(), packet.length());
-      data = String((char *)packet.data());
-      convertData();
-      //Serial.println(data);
-    });
-  }
+  setupWifi();
+  handleUDP();
 }
 
 void loop()
 {
-  if (Serial.available() > 0)
-  {
-    char rawData = Serial.read();
-    if (rawData == 'H')
-    {
-      data = "";
-    }
-    else if (rawData == 'E')
-    {
-      convertData();
-    }
-    else
-    {
-      data += rawData;
-    }
-  }
+  checkWifi();
+  readSerial();
 }
 
-void doCommand() {
-      ledcWrite(CH_MOTOR, power);
-      //ledcWrite(CH_SERVOY, y);
-      servoY.write(y);
-      //ledcWrite(CH_SERVOX, x);
+void doCommand()
+{
+  ledcWrite(CH_MOTOR, power);
+  //ledcWrite(CH_SERVOY, y);
+  servoY.write(y);
+  //ledcWrite(CH_SERVOX, x);
 }
 
 void convertData()
@@ -138,4 +102,70 @@ void convertData()
   }
   Serial.println(y);
   doCommand();
+}
+
+void readSerial()
+{
+  if (Serial.available() > 0)
+  {
+    char rawData = Serial.read();
+    if (rawData == 'H')
+    {
+      data = "";
+    }
+    else if (rawData == 'E')
+    {
+      convertData();
+    }
+    else
+    {
+      data += rawData;
+    }
+  }
+}
+
+void checkWifi()
+{
+  if ((WiFi.status() != WL_CONNECTED) && (millis() > check_wifi))
+  {
+    Serial.println("Reconnecting to WiFi...");
+    WiFi.disconnect();
+    WiFi.begin(ssid, password);
+    check_wifi = millis() + 30000;
+  }
+}
+
+void setupWifi()
+{
+  if (!WiFi.config(local_IP, gateway, subnet, primaryDNS, secondaryDNS))
+  {
+    Serial.println("STA Failed to configure");
+  }
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  if (WiFi.waitForConnectResult() != WL_CONNECTED)
+  {
+    while (true)
+    {
+      Serial.println("WiFi Failed");
+      delay(1000);
+    }
+  }
+  Serial.println("WiFi Connected");
+}
+
+void handleUDP()
+{
+  if (udp.listen(6969))
+  {
+    Serial.print("UDP Listening on IP: ");
+    Serial.println(WiFi.localIP());
+    udp.onPacket([](AsyncUDPPacket packet) {
+      //Serial.write(packet.data(), packet.length());
+      data = String((char *)packet.data());
+      convertData();
+      //Serial.println(data);
+    });
+  }
 }
