@@ -6,5 +6,8 @@
     "terminal.integrated.env.osx": {
         "PATH": "/Users/arimdor/.platformio/penv/bin:/Users/arimdor/.platformio/penv:/Library/Frameworks/Python.framework/Versions/3.7/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/go/bin:/Library/Java/JavaVirtualMachines/jdk1.8.0_181.jdk/Contents/Home/bin:/Users/arimdor/Library/Android/sdk/bin",
         "PLATFORMIO_CALLER": "vscode"
+    },
+    "files.associations": {
+        "functional": "cpp"
     }
 }

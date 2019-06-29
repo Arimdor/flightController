@@ -46,7 +46,8 @@ last_position_y = 0.00000
 last_position_throttle = 0.00000
 
 # Serial COM Setup
-arduino = serial.Serial('/dev/tty.SLAB_USBtoUART', baudrate=9600)
+#arduino = serial.Serial('/dev/tty.SLAB_USBtoUART', baudrate=9600)
+#arduino = serial.Serial('com4', baudrate=9600)
 
 
 def readSerial():
@@ -57,11 +58,11 @@ def readSerial():
     print("Escuchando puerto serial")
     lock.release()
 
-    while run:
-        reading = arduino.read().decode('utf-8')
-        lock.acquire()
-        print(reading)
-        lock.release()
+    #while run:
+        #reading = arduino.read().decode('utf-8')
+        #lock.acquire()
+        #print(reading)
+        #lock.release()
 
 
 #thread = threading.Thread(target=readSerial)
@@ -70,8 +71,8 @@ def readSerial():
 
 def close_read_serial():
     print("Closing Serial Connection")
-    arduino.close()
-    thread.join(0)
+    #arduino.close()
+    #thread.join(0)
 
 
 def main_loop():
@@ -82,9 +83,9 @@ def main_loop():
 
             if event.type == pygame.QUIT:
                 run = False
-                close_read_serial()
+                #close_read_serial()
                 joystick.quit()
-                throttle.quit()
+                #throttle.quit()
                 pygame.quit()
 
             x = round(joystick.get_axis(0) * -1, 6)
@@ -106,9 +107,9 @@ def main_loop():
                     power = 0
 
                 data = ('H' + str(power) + '|' + str(x_data) + '|' +
-                        str(y_data) + '|' + 'E').encode('utf-8')
-                #sock.sendto(data, (UDP_IP, UDP_PORT))
-                arduino.write(data)
+                        str(y_data) + '|' + 'E').encode('ascii')
+                sock.sendto(data, (UDP_IP, UDP_PORT))
+                #arduino.write(data)
                 print(data)
 
                 screen.fill(0)

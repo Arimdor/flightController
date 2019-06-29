@@ -23,7 +23,7 @@ const int SERVOX = 23;
 Servo servoY;
 
 const char *ssid = "Casa";
-const char *password = "123456789R";
+const char *password = "987654321R";
 IPAddress local_IP(192, 168, 1, 184);
 IPAddress gateway(192, 168, 1, 1);
 IPAddress subnet(255, 255, 0, 0);
@@ -69,23 +69,10 @@ void setup()
     Serial.print("UDP Listening on IP: ");
     Serial.println(WiFi.localIP());
     udp.onPacket([](AsyncUDPPacket packet) {
-      Serial.print("UDP Packet Type: ");
-      Serial.print(packet.isBroadcast() ? "Broadcast" : packet.isMulticast() ? "Multicast" : "Unicast");
-      Serial.print(", From: ");
-      Serial.print(packet.remoteIP());
-      Serial.print(":");
-      Serial.print(packet.remotePort());
-      Serial.print(", To: ");
-      Serial.print(packet.localIP());
-      Serial.print(":");
-      Serial.print(packet.localPort());
-      Serial.print(", Length: ");
-      Serial.print(packet.length());
-      Serial.print(", Data: ");
-      Serial.write(packet.data(), packet.length());
-      Serial.println();
-      //reply to the client
-      packet.printf("Got %u bytes of data", packet.length());
+      //Serial.write(packet.data(), packet.length());
+      data = String((char *)packet.data());
+      convertData();
+      //Serial.println(data);
     });
   }
 }
@@ -102,12 +89,6 @@ void loop()
     else if (rawData == 'E')
     {
       convertData();
-      Serial.println(data);
-
-      ledcWrite(CH_MOTOR, power);
-      //ledcWrite(CH_SERVOY, y);
-      servoY.write(y);
-      //ledcWrite(CH_SERVOX, x);
     }
     else
     {
@@ -116,13 +97,20 @@ void loop()
   }
 }
 
+void doCommand() {
+      ledcWrite(CH_MOTOR, power);
+      //ledcWrite(CH_SERVOY, y);
+      servoY.write(y);
+      //ledcWrite(CH_SERVOX, x);
+}
+
 void convertData()
 {
   String temp = "";
   int counter = 0;
   for (int i = 0; i <= data.length(); i++)
   {
-    if (data.substring(i, i + 1) != "H" || data.substring(i, i + 1) != "E")
+    if (data.substring(i, i + 1) != "H" || data.substring(i, i + 1) != "E" || data.substring(i, i + 1) != "\n")
     {
       if (data.substring(i, i + 1) == "|")
       {
@@ -144,7 +132,10 @@ void convertData()
       else
       {
         temp += data.substring(i, i + 1);
+        //Serial.println(temp);
       }
     }
   }
+  Serial.println(y);
+  doCommand();
 }
